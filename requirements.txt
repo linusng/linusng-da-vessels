@@ -1,13 +1,7 @@
-glob2==0.6
-llvmlite==0.28.0
 lxml==4.3.2
-Markdown==3.1.1
-MarkupSafe==1.1.1
 matplotlib==3.0.3
 numpy==1.16.2
-numpydoc==0.8.0
 pandas==0.24.2
-pandocfilters==1.4.2
 plotly==4.5.4
 streamlit==0.86.0
 scikit-learn==0.21.3
