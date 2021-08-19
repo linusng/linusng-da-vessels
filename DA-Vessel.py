@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit import caching
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -137,6 +138,7 @@ def st_plot_datehist(vessel):
     
 
 vessels = [vessel_0, vessel_1, vessel_2, vessel_3]
+
 for vessel in vessels:
 	st_plot_datehist(vessel)
 #plt.clf()
@@ -271,6 +273,31 @@ def plot_dateUTC_operation_group_all_vessels_table_only(vessels, operation, grou
         list_of_vessels.append(vessel_name)
     st.table(df_table)
 
+def plot_box_BA_quantile(vessel, operation, hi_quantile=0.99, lo_quantile=0.01):
+    vessel_name = vessel['IMO'][1]
+    st.write('''
+    ### {} {} (all entries) Box plot\n(before forward filling detected outliers)
+            '''.format(vessel_name, operation))
+    fig = px.box(vessel , y=operation)
+    st.plotly_chart(fig)
+
+    v_q_hi  = vessel[operation].quantile(hi_quantile)
+    v_q_lo  = vessel[operation].quantile(lo_quantile)
+    st.write("Threshold cut-off (higher quantile={}): ".format(hi_quantile), v_q_hi)
+    st.write("Threshold cut-off (lower quantile={}): ".format(lo_quantile), v_q_lo)
+
+    vessel[operation] = vessel[operation].mask(vessel[operation] > v_q_hi)
+    vessel[operation] = vessel[operation].mask(vessel[operation] <= v_q_lo)
+    vessel[operation].fillna(method='ffill')
+
+    st.write('''
+    ### {} {} (all entries) Box plot\n(after forward filling detected outliers)
+            '''.format(vessel_name, operation))
+ 
+    fig = px.box(vessel , y=operation)
+    st.plotly_chart(fig)
+    return vessel
+
 
     
     
@@ -352,23 +379,23 @@ def clean_consumption_cols(vessels, consumers):
             bool_list = np.where(vessel[consumer] == vessel[consumer_HFO] + vessel[consumer_MGO], True, False)
             for i, j in enumerate(bool_list):
                 if not j:
-                    if np.float(vessel.loc[[i]][consumer]) == 0 and np.float(vessel.loc[[i]][consumer_HFO]) != 0 or np.float(vessel.loc[[i]][consumer_HFO]) != 0:
-                        vessel.at[i, consumer] = np.float(vessel.loc[[i]][consumer_HFO]) + np.float(vessel.loc[[i]][consumer_MGO])
+                    if float(vessel.loc[[i]][consumer]) == 0 and float(vessel.loc[[i]][consumer_HFO]) != 0 or float(vessel.loc[[i]][consumer_HFO]) != 0:
+                        vessel.at[i, consumer] = float(vessel.loc[[i]][consumer_HFO]) + float(vessel.loc[[i]][consumer_MGO])
                         
-                    elif np.float(vessel.loc[[i]][consumer]) > np.float(vessel.loc[[i]][consumer_HFO]) + np.float(vessel.loc[[i]][consumer_MGO]):
-                        vessel.at[i, consumer] = np.float(vessel.loc[[i]][consumer_HFO]) + np.float(vessel.loc[[i]][consumer_MGO])
+                    elif float(vessel.loc[[i]][consumer]) > float(vessel.loc[[i]][consumer_HFO]) + float(vessel.loc[[i]][consumer_MGO]):
+                        vessel.at[i, consumer] = float(vessel.loc[[i]][consumer_HFO]) + float(vessel.loc[[i]][consumer_MGO])
 
-                    elif np.float(vessel.loc[[i]][consumer_MGO]) > np.float(vessel.loc[[i]][consumer]):
-                        vessel.at[i, consumer_MGO] = np.float(vessel.loc[[i]][consumer]) - np.float(vessel.loc[[i]][consumer_HFO])
+                    elif float(vessel.loc[[i]][consumer_MGO]) > float(vessel.loc[[i]][consumer]):
+                        vessel.at[i, consumer_MGO] = float(vessel.loc[[i]][consumer]) - float(vessel.loc[[i]][consumer_HFO])
 
-                    elif np.float(vessel.loc[[i]][consumer_MGO]) >= np.float(vessel.loc[[i]][consumer]) and np.float(vessel.loc[[i]][consumer_HFO]) != 0:
-                        vessel.at[i, consumer_MGO] = np.float(vessel.loc[[i]][consumer]) - np.float(vessel.loc[[i]][consumer_HFO])
+                    elif float(vessel.loc[[i]][consumer_MGO]) >= float(vessel.loc[[i]][consumer]) and float(vessel.loc[[i]][consumer_HFO]) != 0:
+                        vessel.at[i, consumer_MGO] = float(vessel.loc[[i]][consumer]) - float(vessel.loc[[i]][consumer_HFO])
 
-                    elif np.float(vessel.loc[[i]][consumer_HFO]) > np.float(vessel.loc[[i]][consumer]):
-                        vessel.at[i, consumer_HFO] = np.float(vessel.loc[[i]][consumer]) - np.float(vessel.loc[[i]][consumer_MGO])
+                    elif float(vessel.loc[[i]][consumer_HFO]) > float(vessel.loc[[i]][consumer]):
+                        vessel.at[i, consumer_HFO] = float(vessel.loc[[i]][consumer]) - float(vessel.loc[[i]][consumer_MGO])
 
-                    elif np.float(vessel.loc[[i]][consumer_HFO]) >= np.float(vessel.loc[[i]][consumer]) and np.float(vessel.loc[[i]][consumer_MGO]) != 0:
-                        vessel.at[i, consumer_HFO] = np.float(vessel.loc[[i]][consumer]) - np.float(vessel.loc[[i]][consumer_MGO])
+                    elif float(vessel.loc[[i]][consumer_HFO]) >= float(vessel.loc[[i]][consumer]) and float(vessel.loc[[i]][consumer_MGO]) != 0:
+                        vessel.at[i, consumer_HFO] = float(vessel.loc[[i]][consumer]) - float(vessel.loc[[i]][consumer_MGO])
 
 ```
 And we call it with
@@ -409,26 +436,27 @@ def clean_consumption_cols(vessels, consumers):
             bool_list = np.where(vessel[consumer] == vessel[consumer_HFO] + vessel[consumer_MGO], True, False)
             for i, j in enumerate(bool_list):
                 if not j:
-                    if np.float(vessel.loc[[i]][consumer]) == 0 and np.float(vessel.loc[[i]][consumer_HFO]) != 0 or np.float(vessel.loc[[i]][consumer_HFO]) != 0:
-                        vessel.at[i, consumer] = np.float(vessel.loc[[i]][consumer_HFO]) + np.float(vessel.loc[[i]][consumer_MGO])
+                    if float(vessel.loc[[i]][consumer]) == 0 and float(vessel.loc[[i]][consumer_HFO]) != 0 or float(vessel.loc[[i]][consumer_HFO]) != 0:
+                        vessel.at[i, consumer] = float(vessel.loc[[i]][consumer_HFO]) + float(vessel.loc[[i]][consumer_MGO])
                         
-                    elif np.float(vessel.loc[[i]][consumer]) > np.float(vessel.loc[[i]][consumer_HFO]) + np.float(vessel.loc[[i]][consumer_MGO]):
-                        vessel.at[i, consumer] = np.float(vessel.loc[[i]][consumer_HFO]) + np.float(vessel.loc[[i]][consumer_MGO])
+                    elif float(vessel.loc[[i]][consumer]) > float(vessel.loc[[i]][consumer_HFO]) + float(vessel.loc[[i]][consumer_MGO]):
+                        vessel.at[i, consumer] = float(vessel.loc[[i]][consumer_HFO]) + float(vessel.loc[[i]][consumer_MGO])
 
-                    elif np.float(vessel.loc[[i]][consumer_MGO]) > np.float(vessel.loc[[i]][consumer]):
-                        vessel.at[i, consumer_MGO] = np.float(vessel.loc[[i]][consumer]) - np.float(vessel.loc[[i]][consumer_HFO])
+                    elif float(vessel.loc[[i]][consumer_MGO]) > float(vessel.loc[[i]][consumer]):
+                        vessel.at[i, consumer_MGO] = float(vessel.loc[[i]][consumer]) - float(vessel.loc[[i]][consumer_HFO])
 
-                    elif np.float(vessel.loc[[i]][consumer_MGO]) >= np.float(vessel.loc[[i]][consumer]) and np.float(vessel.loc[[i]][consumer_HFO]) != 0:
-                        vessel.at[i, consumer_MGO] = np.float(vessel.loc[[i]][consumer]) - np.float(vessel.loc[[i]][consumer_HFO])
+                    elif float(vessel.loc[[i]][consumer_MGO]) >= float(vessel.loc[[i]][consumer]) and float(vessel.loc[[i]][consumer_HFO]) != 0:
+                        vessel.at[i, consumer_MGO] = float(vessel.loc[[i]][consumer]) - float(vessel.loc[[i]][consumer_HFO])
 
-                    elif np.float(vessel.loc[[i]][consumer_HFO]) > np.float(vessel.loc[[i]][consumer]):
-                        vessel.at[i, consumer_HFO] = np.float(vessel.loc[[i]][consumer]) - np.float(vessel.loc[[i]][consumer_MGO])
+                    elif float(vessel.loc[[i]][consumer_HFO]) > float(vessel.loc[[i]][consumer]):
+                        vessel.at[i, consumer_HFO] = float(vessel.loc[[i]][consumer]) - float(vessel.loc[[i]][consumer_MGO])
 
-                    elif np.float(vessel.loc[[i]][consumer_HFO]) >= np.float(vessel.loc[[i]][consumer]) and np.float(vessel.loc[[i]][consumer_MGO]) != 0:
-                        vessel.at[i, consumer_HFO] = np.float(vessel.loc[[i]][consumer]) - np.float(vessel.loc[[i]][consumer_MGO])
+                    elif float(vessel.loc[[i]][consumer_HFO]) >= float(vessel.loc[[i]][consumer]) and float(vessel.loc[[i]][consumer_MGO]) != 0:
+                        vessel.at[i, consumer_HFO] = float(vessel.loc[[i]][consumer]) - float(vessel.loc[[i]][consumer_MGO])
 
 consumers = ['ME_Consumption', 'Boiler_Consumption']
 clean_consumption_cols(vessels, consumers)
+
 
 
 st.write('''
@@ -647,7 +675,6 @@ def plot_vessels_on_map(vessel):
 Now we can plot the coordinates and observe the frequented areas of the vessles:
          ''')
 
-
 def plot_vessels_on_map(vessel):
     vessel_name = vessel['IMO'][1]
     df_vessels_datehist = pd.DataFrame()
@@ -797,7 +824,53 @@ Next, on the fuel efficiency, `ME_calculated_SFOC`.
 
     ''')
 
+vessel_0_new = load_data("./vessel_data/vessel_0.csv")
+vessel_1_new = load_data("./vessel_data/vessel_1.csv")
+vessel_2_new = load_data("./vessel_data/vessel_2.csv")
+vessel_3_new = load_data("./vessel_data/vessel_3.csv")
 
+vessels_new = [vessel_0_new, vessel_1_new, vessel_2_new, vessel_3_new]
+clean_consumption_cols(vessels_new, consumers)
+for vessel in vessels_new:
+    vessel['AE_Consumption'] = vessel['AE_Consumption_MGO'] + vessel['AE_Consumption_HFO']
+
+df_col_replace_neg_to_zero(vessels_new, 'Cargo_Mt')
+
+# plotly 
+def plot_dateUTC_operation_group_all_vessels_st_refresh(vessels, operation_n, groupby_dateRange):
+    list_of_vessels = []
+    rows_list = []
+    col_list = ['Vessel', 'Total', 'Min', 'Max', 'Mean']
+    plots_n = []
+    for vessel_n in vessels:
+        vessel_name = vessel_n['IMO'][1]
+        df_vessel_n = pd.DataFrame()
+        df_vessel_n['Date_UTC'] = pd.to_datetime(vessel_n['Date_UTC'], infer_datetime_format=True)
+        df_vessel_n[operation_n] = vessel_n[operation_n]
+        rows_list.append([vessel_name,
+                          df_vessel_n[operation_n].sum(),
+                          df_vessel_n[operation_n].min(),
+                          df_vessel_n[operation_n].max(),
+                          df_vessel_n[operation_n].mean()])
+        df_table = pd.DataFrame(rows_list, columns=col_list)
+        df_vessel_group_n = df_vessel_n.groupby(df_vessel_n['Date_UTC'].dt.strftime(groupby_dateRange))[operation_n].mean()
+        list_of_vessels.append(vessel_name)
+        df_vessel_group_rn_n = df_vessel_group_n.rename(vessel_name, inplace=True)
+        plots_n.append(df_vessel_group_rn_n)
+    df_plot_n = pd.concat(plots_n, axis=1).fillna(0)
+    df_plot_n['Date_UTC'] = df_plot_n.index
+    df_plot_n = pd.melt(df_plot_n, id_vars='Date_UTC', value_vars=df_plot_n.columns[:-1])
+    fig_n = px.line(df_plot_n, x='Date_UTC', y='value', color='variable', color_discrete_sequence=px.colors.qualitative.D3,
+                  labels={
+                      'Date_UTC': 'Date_UTC ({})'.format(groupby_dateRange),
+                      'value': operation_n + ' ({} mean)'.format(groupby_dateRange),
+                      'variable': 'Vessel'
+                  })
+    st.table(df_table)
+    st.plotly_chart(fig_n)
+
+
+caching.clear_cache()
 
 st.write('''
          #### Specific Fuel Oil Consumption (SFOC) at Main Engine (Yearly)
@@ -805,7 +878,7 @@ st.write('''
 plot_dateUTC_operation_group_all_vessels_st(vessels, 'ME_calculated_SFOC', '%Y')
 ```
          ''')
-plot_dateUTC_operation_group_all_vessels_st(vessels, 'ME_calculated_SFOC', '%Y')
+plot_dateUTC_operation_group_all_vessels_st_refresh(vessels_new, 'ME_calculated_SFOC', '%Y')
 
 st.write('''
 Based on the above plot of average `ME_calculated_SFOC` per year, and the stats table,
@@ -821,7 +894,7 @@ st.write('''
 plot_dateUTC_operation_group_all_vessels(vessels, 'ME_calculated_SFOC', '%Y-%m')
 ```
          ''')
-plot_dateUTC_operation_group_all_vessels_st(vessels, 'ME_calculated_SFOC', '%Y-%m')
+plot_dateUTC_operation_group_all_vessels_st_refresh(vessels_new, 'ME_calculated_SFOC', '%Y-%m')
 
 st.write('''
          #### Specific Fuel Oil Consumption (SFOC) at Main Engine (Daily)
@@ -829,7 +902,7 @@ st.write('''
 plot_dateUTC_operation_group_all_vessels(vessels, 'ME_calculated_SFOC', '%Y-%m-%d')
 ```
          ''')
-plot_dateUTC_operation_group_all_vessels_st(vessels, 'ME_calculated_SFOC', '%Y-%m-%d')
+plot_dateUTC_operation_group_all_vessels_st_refresh(vessels_new, 'ME_calculated_SFOC', '%Y-%m-%d')
 
 st.write('''
 From the above plots of average `ME_calculated_SFOC` monthly and daily, we can certainly tell that there are errors in the entries considering the huge spike
@@ -880,32 +953,6 @@ vessel_3_filtered = plot_box_BA_quantile(vessel_3, 'ME_calculated_SFOC')
 Let's look at the box plots before and after the function is applied.
          ''')
 
-
-def plot_box_BA_quantile(vessel, operation, hi_quantile=0.99, lo_quantile=0.01):
-    vessel_name = vessel['IMO'][1]
-    st.write('''
-    ### {} {} (all entries) Box plot\n(before forward filling detected outliers)
-            '''.format(vessel_name, operation))
-    fig = px.box(vessel , y=operation)
-    st.plotly_chart(fig)
-
-    v_q_hi  = vessel[operation].quantile(hi_quantile)
-    v_q_lo  = vessel[operation].quantile(lo_quantile)
-    st.write("Threshold cut-off (higher quantile={}): ".format(hi_quantile), v_q_hi)
-    st.write("Threshold cut-off (lower quantile={}): ".format(lo_quantile), v_q_lo)
-
-    vessel[operation] = vessel[operation].mask(vessel[operation] > v_q_hi)
-    vessel[operation] = vessel[operation].mask(vessel[operation] <= v_q_lo)
-    vessel[operation].fillna(method='ffill')
-
-    st.write('''
-    ### {} {} (all entries) Box plot\n(after forward filling detected outliers)
-            '''.format(vessel_name, operation))
- 
-    fig = px.box(vessel , y=operation)
-    st.plotly_chart(fig)
-    return vessel
-
 vessel_0_filtered = plot_box_BA_quantile(vessel_0, 'ME_calculated_SFOC')
 vessel_1_filtered = plot_box_BA_quantile(vessel_1, 'ME_calculated_SFOC')
 vessel_2_filtered = plot_box_BA_quantile(vessel_2, 'ME_calculated_SFOC')
@@ -913,6 +960,7 @@ vessel_3_filtered = plot_box_BA_quantile(vessel_3, 'ME_calculated_SFOC')
 
 vessels_filtered = [vessel_0_filtered, vessel_1_filtered, vessel_2_filtered, vessel_3_filtered]
 
+caching.clear_cache()
 st.write('''
 Let's look at the line charts after the error outliers are removed:
          ''')
@@ -1210,7 +1258,11 @@ for v in ms_vessels_w_norm_cols_group:
                   hovermode='closest')
     st.plotly_chart(fig)
 
+#for v in ms_vessels_w_norm_cols_group:
+#    v.reset_index(drop=True, inplace=True)
 df_scatter_plot = pd.concat(ms_vessels_w_norm_cols_group, axis=0)
+df_scatter_plot.reset_index(inplace=True)
+del df_scatter_plot['Date_UTC']
  
 st.write('''
 From the above scatter plots for each of the vessels, we observe that the 
@@ -1222,8 +1274,7 @@ To get a better perspective and visualization, let's put it together and overlay
          ''')
 
 st.write('### Scatter matrix on the features of interest (All 4 vessels)')
-fig = px.scatter_matrix(df_scatter_plot,
-    color="label")
+fig = px.scatter_matrix(df_scatter_plot, color="label")
 fig.update_layout(#title=title,
                   dragmode='select',
                   width=1000,
