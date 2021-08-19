@@ -1,7 +1,6 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import altair as alt
 import plotly.express as px
 import plotly.figure_factory as ff
 import plotly.io as pio
@@ -9,11 +8,10 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 from matplotlib.pylab import rcParams
 rcParams['figure.figsize'] = 18, 9
-from IPython.display import display, HTML
 import re
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-import seaborn as sns
+#import seaborn as sns
 
 st.title('Data Analytics - Vessels')
 st.markdown("""
@@ -141,7 +139,7 @@ def st_plot_datehist(vessel):
 vessels = [vessel_0, vessel_1, vessel_2, vessel_3]
 for vessel in vessels:
 	st_plot_datehist(vessel)
-plt.clf()
+#plt.clf()
 
 
 
